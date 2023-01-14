@@ -102,11 +102,13 @@ namespace IXLA_SDK
 
 
 
-            if (Ip == string.Empty || SerialNumber==string.Empty ) 
+            if (Ip == string.Empty || SerialNumber == string.Empty ) 
             {
                 return "No IP or SerialNumber Provided";
-
             }
+
+
+
 
             var result = Task.Run(async () =>
             {
@@ -181,7 +183,7 @@ namespace IXLA_SDK
 
                     //           **** local ******
 
-                    // when use for test in local devise  uncommint the below 2 line
+                    // when use for test in local device  uncommnt the below 2 line
 
                     //await machineApi.LoadDocumentAsync("layout", System.IO.File.ReadAllBytes("\\Users\\admin\\Desktop\\IraqLayoutNew\\all Printer\\" + SerialNumber + "\\" + SerialNumber + "Layout.sjf")).ConfigureAwait(false);
                     //await machineApi.LoadDocumentAsync("mli", System.IO.File.ReadAllBytes("\\Users\\admin\\Desktop\\IraqLayoutNew\\all Printer\\" + SerialNumber + "\\" + SerialNumber + "Mli.sjf")).ConfigureAwait(false);
