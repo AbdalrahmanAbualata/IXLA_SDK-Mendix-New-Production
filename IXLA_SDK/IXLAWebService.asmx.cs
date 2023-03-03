@@ -353,5 +353,51 @@ namespace IXLA_SDK
         }
 
 
+        [WebMethod]
+        public string CheckAutopos(string Ip, int Port)
+        {
+
+            var result = Task.Run(async () =>
+            {
+                var client = new MachineClient();
+
+
+
+                try
+                {
+                    // we don't need the stopping token 
+                    await client.ConnectAsync(Ip, Port, CancellationToken.None).ConfigureAwait(false);
+                    var machineApi = new MachineApi(client);
+
+
+                    // eject the passport
+                    var autoPosResponse = await machineApi.PerformAutoPosition("IraqAutopos");
+
+                    return "Ok";
+                }
+                catch (Exception e)
+                {
+                    return e.ToString();
+                }
+                finally
+                {
+                    try
+                    {
+                        // graceful disconnect sends \r\n before disposing the stream
+                        // to avoid hanging connections server side
+                        Console.WriteLine("Graceful disconnect...");
+
+                        await client.GracefulDisconnectAsync().ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                    }
+                }
+            }).Result;
+
+
+            return result;
+        }
+
     }
 }
