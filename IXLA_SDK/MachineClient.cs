@@ -1,4 +1,5 @@
 ﻿using IXLA.Sdk.Xp24.Protocol.Commands.Transport;
+using Polly;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -53,15 +54,46 @@ namespace IXLA.Sdk.Xp24
         /// <param name="hostname"></param>
         /// <param name="port"></param>
         /// <param name="cancellationToken"></param>
+        //public async Task ConnectAsync(string hostname, int port, CancellationToken cancellationToken = default)
+        //{
+        //    await _tcpClient.ConnectAsync(hostname, port).ConfigureAwait(false);
+        //    var networkStream = _tcpClient.GetStream();
+        //    _writer = new StreamWriter(networkStream);
+        //    _writer.AutoFlush = true;
+        //    _reader = new StreamReader(networkStream);
+        //    await ConsumeWelcomeMessage().ConfigureAwait(false);
+        //}
+
+
         public async Task ConnectAsync(string hostname, int port, CancellationToken cancellationToken = default)
         {
+            //Logger.Info($"Connecting to {hostname}:{port}");
             await _tcpClient.ConnectAsync(hostname, port).ConfigureAwait(false);
             var networkStream = _tcpClient.GetStream();
-            _writer = new StreamWriter(networkStream);
-            _writer.AutoFlush = true;
+            _writer = new StreamWriter(networkStream) { AutoFlush = true };
             _reader = new StreamReader(networkStream);
             await ConsumeWelcomeMessage().ConfigureAwait(false);
+            //Logger.Info("Connected successfully");
         }
+
+        //public async Task ConnectWithRetryAsync(string hostname, int port, CancellationToken cancellationToken = default)
+        //{
+        //    var retryPolicy = Policy
+        //        .Handle<SocketException>()
+        //          .Or<TimeoutException>()
+        //        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+        //            onRetry: (exception, timeSpan, context) =>
+        //            {
+        //                //Logger.Warn($"Retrying due to {exception.GetType().Name}. Attempting again in {timeSpan.Seconds} seconds.");
+        //            });
+
+        //    await retryPolicy.ExecuteAsync(async () =>
+        //    {
+        //        await ConnectAsync(hostname, port, cancellationToken);
+        //    });
+        //}
+
+
 
         /// <summary>
         /// Used only by ConnectAsync to consume the welcome message from the machine
@@ -84,7 +116,7 @@ namespace IXLA.Sdk.Xp24
             {
                 try
                 {
-                    await _tcpClient.GetStream().WriteAsync(new[] { (byte)'\r', (byte)'\n' },0,20000000).ConfigureAwait(false);
+                    await _tcpClient.GetStream().WriteAsync(new[] { (byte)'\r', (byte)'\n' },0,2).ConfigureAwait(false);
                 }
                 catch
                 {
@@ -253,9 +285,12 @@ namespace IXLA.Sdk.Xp24
             catch
             {
             }
+            finally 
+            {
+                _disposing = false;
+                _disposed = true;
+            }
 
-            _disposing = false;
-            _disposed = true;
         }
     }
 }
