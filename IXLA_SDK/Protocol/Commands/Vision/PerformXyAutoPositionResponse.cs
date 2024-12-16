@@ -6,7 +6,7 @@ namespace IXLA.Sdk.Xp24.Protocol.Commands.Vision
     {
         public double XOffset { get; set; }
         public double YOffset { get; set; }
-        public int Correlation { get; set; }
+        public double Correlation { get; set; }
 
         public PerformXyAutoPositionResponse(MachineCommand command) : base(command)
         {
@@ -20,7 +20,7 @@ namespace IXLA.Sdk.Xp24.Protocol.Commands.Vision
 
             if (!string.IsNullOrEmpty(offsetX)) XOffset = double.Parse(offsetX);
             if (!string.IsNullOrEmpty(offsetY)) YOffset = double.Parse(offsetY);
-            //if (!string.IsNullOrEmpty(correlation)) Correlation = int.Parse(correlation); // we faced a problem with that when its on
+            if (!string.IsNullOrEmpty(correlation)) Correlation = double.Parse(correlation); // we faced a problem with that when its on
         }
     }
 }

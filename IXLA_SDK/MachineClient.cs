@@ -7,6 +7,8 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using NLog;
+using System.Web.Services.Description;
 
 namespace IXLA.Sdk.Xp24
 {
@@ -64,34 +66,36 @@ namespace IXLA.Sdk.Xp24
         //    await ConsumeWelcomeMessage().ConfigureAwait(false);
         //}
 
+        // NLog logger initialization
+        private static readonly ILogger Logger = LogManager.GetCurrentClassLogger();
 
-        public async Task ConnectAsync(string hostname, int port, CancellationToken cancellationToken = default)
+        public async Task ConnectAsync(string hostname, int Port)
         {
-            //Logger.Info($"Connecting to {hostname}:{port}");
-            await _tcpClient.ConnectAsync(hostname, port).ConfigureAwait(false);
+            await _tcpClient.ConnectAsync(hostname, Port).ConfigureAwait(false);
             var networkStream = _tcpClient.GetStream();
             _writer = new StreamWriter(networkStream) { AutoFlush = true };
             _reader = new StreamReader(networkStream);
             await ConsumeWelcomeMessage().ConfigureAwait(false);
-            //Logger.Info("Connected successfully");
+            Logger.Info($" {hostname}:{Port} --> Connected successfully To Ixla Printer.");
         }
 
-        //public async Task ConnectWithRetryAsync(string hostname, int port, CancellationToken cancellationToken = default)
-        //{
-        //    var retryPolicy = Policy
-        //        .Handle<SocketException>()
-        //          .Or<TimeoutException>()
-        //        .WaitAndRetryAsync(3, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-        //            onRetry: (exception, timeSpan, context) =>
-        //            {
-        //                //Logger.Warn($"Retrying due to {exception.GetType().Name}. Attempting again in {timeSpan.Seconds} seconds.");
-        //            });
+        public async Task ConnectWithRetryAsync(string hostname, int port)
+        {
+            var retryPolicy = Policy
+                .Handle<SocketException>()
+                  .Or<TimeoutException>()
+                .WaitAndRetryAsync(2, retryAttempt => TimeSpan.FromSeconds(Math.Pow(1, retryAttempt)),
+                    onRetry: (exception, timeSpan, context) =>
+                    {
+                        Logger.Warn($" {hostname}:{port} --> starting connecting retry Mode....");
+                        Logger.Warn($" {hostname}:{port} --> Retrying due to {exception.GetType().Name}. Attempting again in {timeSpan.Seconds} seconds.");
+                    });
 
-        //    await retryPolicy.ExecuteAsync(async () =>
-        //    {
-        //        await ConnectAsync(hostname, port, cancellationToken);
-        //    });
-        //}
+            await retryPolicy.ExecuteAsync(async () =>
+            {
+                await ConnectAsync(hostname, port);
+            });
+        }
 
 
 
@@ -165,14 +169,14 @@ namespace IXLA.Sdk.Xp24
 
                 // if this throws is a bug (response object with wrong constructor) 
                 if (response is null) {
-                    await _writer.WriteLineAsync(payloadEject).ConfigureAwait(false);//new added for eject passport if error occur
+                    //await _writer.WriteLineAsync(payloadEject).ConfigureAwait(false);//new added for eject passport if error occur
                     throw new Exception($"Failed to create response object via reflection for type {typeof(TResponse).Name}"); }
 
                 // populate response properties
                 response.Hydrate(ackXmlReader, true);
                 // if the server returns valid=false then we will not receive further messages 
                 if (!response.Valid) {
-                    await _writer.WriteLineAsync(payloadEject).ConfigureAwait(false);//new added for eject passport if error occur
+                    //await _writer.WriteLineAsync(payloadEject).ConfigureAwait(false);//new added for eject passport if error occur
                     throw new Exception($"Invalid command. Error message: {response.Error}"); }
                 if (!command.IsAsync) return response;
 
@@ -181,7 +185,7 @@ namespace IXLA.Sdk.Xp24
                 // for async commands usually the second response (executed true/false) carries also date
                 response.Hydrate(executionXmlReader, false);
                 if (!response.Executed) {
-                    await _writer.WriteLineAsync(payloadEject).ConfigureAwait(false);//new added for eject passport if error occur
+                    //await _writer.WriteLineAsync(payloadEject).ConfigureAwait(false);//new added for eject passport if error occur
                     throw new Exception($"Failed to execute command {command.Name}. Error message: {command.Name}"); }
 
                 return response;

@@ -7,6 +7,7 @@ using IXLA.Sdk.Xp24.Protocol.Commands.Interface;
 using IXLA.Sdk.Xp24.Protocol.Commands.Interface.Model;
 using IXLA.Sdk.Xp24.Protocol.Commands.Transport;
 using IXLA.Sdk.Xp24.Protocol.Commands.Vision;
+using NLog;
 
 namespace IXLA.Sdk.Xp24
 {
@@ -17,6 +18,7 @@ namespace IXLA.Sdk.Xp24
     public class MachineApi : IDisposable
     {
         private readonly MachineClient _client;
+        private static readonly ILogger Logger = LogManager.GetCurrentClassLogger(); // NLog logger initialization
 
         /// <summary>
         /// </summary>
