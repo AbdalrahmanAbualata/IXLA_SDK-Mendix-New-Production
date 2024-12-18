@@ -5,7 +5,8 @@ namespace IXLA.Sdk.Xp24.Protocol.Commands.Encoder
 {
     public class Transmit2RfIdResponse : MachineResponseBase
     {
-        public byte[] ChipReply { get; set; }
+        //public byte[] ChipReply { get; set; }
+        public string ChipReply { get; set; }
         public Transmit2RfIdResponse(MachineCommand command) : base(command)
         {
         }
@@ -14,7 +15,8 @@ namespace IXLA.Sdk.Xp24.Protocol.Commands.Encoder
         {
             var chipReply = reader.GetAttribute("ChipReply");
             if (chipReply is null) return;
-            ChipReply = Convert.FromBase64String(chipReply);
+            //ChipReply = Convert.FromBase64String(chipReply);
+            ChipReply = chipReply;
         }
     }
 }

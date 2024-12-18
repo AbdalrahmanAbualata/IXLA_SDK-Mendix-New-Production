@@ -87,7 +87,7 @@ namespace IXLA.Sdk.Xp24
                 .WaitAndRetryAsync(2, retryAttempt => TimeSpan.FromSeconds(Math.Pow(1, retryAttempt)),
                     onRetry: (exception, timeSpan, context) =>
                     {
-                        Logger.Warn($" {hostname}:{port} --> starting connecting retry Mode....");
+                        Logger.Warn($" {hostname}:{port} --> starting connecting in retry Mode....");
                         Logger.Warn($" {hostname}:{port} --> Retrying due to {exception.GetType().Name}. Attempting again in {timeSpan.Seconds} seconds.");
                     });
 

@@ -80,7 +80,7 @@ namespace IXLA.Sdk.Xp24
         /// </summary>
         /// <param name="apdu"></param>
         /// <returns></returns>
-        public async Task<Transmit2RfIdResponse> Transmit2RfId(params byte[] apdu) => await _client.SendCommandAsync<Transmit2RfIdResponse>(new Transmit2RfIdCommand(apdu)).ConfigureAwait(false);
+        public async Task<Transmit2RfIdResponse> Transmit2RfId(string apdu) => await _client.SendCommandAsync<Transmit2RfIdResponse>(new Transmit2RfIdCommand(apdu)).ConfigureAwait(false);
 
         /// <summary>
         /// Marks the specified layout
