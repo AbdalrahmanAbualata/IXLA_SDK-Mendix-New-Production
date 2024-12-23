@@ -50,22 +50,6 @@ namespace IXLA.Sdk.Xp24
         {
         }
 
-        /// <summary>
-        /// Opens a new tcp connection to the specified hostname:port 
-        /// </summary>
-        /// <param name="hostname"></param>
-        /// <param name="port"></param>
-        /// <param name="cancellationToken"></param>
-        //public async Task ConnectAsync(string hostname, int port, CancellationToken cancellationToken = default)
-        //{
-        //    await _tcpClient.ConnectAsync(hostname, port).ConfigureAwait(false);
-        //    var networkStream = _tcpClient.GetStream();
-        //    _writer = new StreamWriter(networkStream);
-        //    _writer.AutoFlush = true;
-        //    _reader = new StreamReader(networkStream);
-        //    await ConsumeWelcomeMessage().ConfigureAwait(false);
-        //}
-
         // NLog logger initialization
         private static readonly ILogger Logger = LogManager.GetCurrentClassLogger();
 

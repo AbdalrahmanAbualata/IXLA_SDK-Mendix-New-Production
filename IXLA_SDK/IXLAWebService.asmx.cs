@@ -17,9 +17,14 @@ using System.Reflection;
 using NLog;
 using System.Web.Services.Description;
 using System.Net.Http;
+using NLog.LayoutRenderers;
+
+
+
 
 namespace IXLA_SDK
 {
+
     /// <summary>
     /// Summary description for WebService1
     /// </summary>
@@ -44,14 +49,14 @@ namespace IXLA_SDK
         //    // the encoder (connect2rfid and transmit2rfid)
 
         [WebMethod]
-        public string Insert(string Ip, int Port)
+        public string Insert(string Ip, int Port, bool PerformAutoPosition = false)
         {
 
             Logger.Info("***********************************************************************************************************************************************************************************");
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Insert method called.");
-                return Task.Run(() => InsertAsync(Ip, Port)).Result;
+                return Task.Run(() => InsertAsync(Ip, Port, PerformAutoPosition)).Result;
             }
             catch (Exception e)
             {
@@ -62,7 +67,7 @@ namespace IXLA_SDK
         }
 
 
-        private async Task<string> InsertAsync(string Ip, int Port)
+        private async Task<string> InsertAsync(string Ip, int Port, bool PerformAutoPosition)
         {
             using var client = new MachineClient();
 
@@ -80,8 +85,19 @@ namespace IXLA_SDK
                 Logger.Info($" {Ip}:{Port} --> Performing LoadPassport operations in Ixla printer....");
                 await machineApi.LoadPassportAsync();
 
-                Logger.Info($" {Ip}:{Port} --> ResetMachine operations completed successfully....");
                 Logger.Info($" {Ip}:{Port} --> Insert operation completed successfully in Ixla printer.");
+
+                // AutoPosition
+
+                if (PerformAutoPosition)
+                {
+                    Logger.Info($" {Ip}:{Port} --> Performing CheckAutopos operations...");
+                    var autoPosResponseInitial = await machineApi.PerformAutoPosition("IraqAutopos");
+
+                    Logger.Info($" {Ip}:{Port} --> CheckAutopos operation completed successfully in Ixla printer, passport is in Ingraving position.");
+                }
+
+                //***************
 
                 Logger.Info($" {Ip}:{Port} --> Sending OK response.");
                 return "Ok";
@@ -103,7 +119,7 @@ namespace IXLA_SDK
         //  MarkLayout method
 
         [WebMethod]
-        public string MarkLayout(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo)
+        public string MarkLayout(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo, bool PerformEject = false)
         {
             Logger.Info("***********************************************************************************************************************************************************************************");
             if (Ip == string.Empty || SerialNumber == string.Empty)
@@ -114,7 +130,7 @@ namespace IXLA_SDK
             try
             {
                 Logger.Info($" {Ip}:{Port} --> MarkLayout method called with SerialNumber: {SerialNumber}");
-                return Task.Run(() => MarkLayoutAsync(Ip, Port, SerialNumber, Type, Country, Passport, Name1EN, DateOfBirth, Name2AR, Surname1EN, Surname1AR, MatherNameEN, MatherNameAR, Sex, PlaceOfBirth, PlaceOfBirthArabic, Nationality, dateOfIssue, DateOfExpiry, Signature, AuthorityPlaceEN, MRZ1, MRZ2, Photo)).Result;
+                return Task.Run(() => MarkLayoutAsync(Ip, Port, SerialNumber, Type, Country, Passport, Name1EN, DateOfBirth, Name2AR, Surname1EN, Surname1AR, MatherNameEN, MatherNameAR, Sex, PlaceOfBirth, PlaceOfBirthArabic, Nationality, dateOfIssue, DateOfExpiry, Signature, AuthorityPlaceEN, MRZ1, MRZ2, Photo, PerformEject)).Result;
             }
             catch (Exception e)
             {
@@ -124,7 +140,7 @@ namespace IXLA_SDK
             }
         }
 
-        private async Task<string> MarkLayoutAsync(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo)
+        private async Task<string> MarkLayoutAsync(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo, bool PerformEject)
         {
             using var client = new MachineClient();
 
@@ -191,6 +207,17 @@ namespace IXLA_SDK
                 await machineApi.MarkLayoutAsync("mli", offsetX: autoPosResponse.XOffset, offsetY: 0).ConfigureAwait(false);
 
                 Logger.Info($" {Ip}:{Port} --> MarkLayout operation for Mli completed successfully in Ixla Printer with SerialNumber: {SerialNumber}.");
+
+
+                // Perform Eject if needed
+                if (PerformEject)
+                {
+                    Logger.Info($" {Ip}:{Port} --> Performing Eject operations...");
+                    await machineApi.EjectAsync().ConfigureAwait(false);
+
+                    Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
+                }
+                //*********************
 
                 Logger.Info($" {Ip}:{Port} --> Sending OK response.");
                 return "Ok";
@@ -291,54 +318,6 @@ namespace IXLA_SDK
                 Logger.Info($" {Ip}:{Port} --> CheckAutopos operation completed successfully in Ixla printer.");
                 Logger.Info($" {Ip}:{Port} --> Auto-position values : Xoffset=({autoPosResponse.XOffset}) , Yoffset=({autoPosResponse.YOffset}) , Correlation=({autoPosResponse.Correlation}%");
 
-                // check UID
-
-                Logger.Info($" {Ip}:{Port} --> Connecting to RfId........");
-                await machineApi.Connect2RfId().ConfigureAwait(false);
-
-                Logger.Info($" {Ip}:{Port} --> Connect2RfId completed successfully.");
-
-                Logger.Info($" {Ip}:{Port} --> Sending Apdu to Chip to get UID....");
-                var transmitResponse = await machineApi.Transmit2RfId("FFCA000000");
-
-                Logger.Info($" {Ip}:{Port} --> Response recived from Chip, ChipReply = '{transmitResponse.ChipReply}'");
-                var chipReply = transmitResponse.ChipReply;
-
-                Logger.Info($" {Ip}:{Port} --> Validating the chipReply....");
-                if (string.IsNullOrEmpty(chipReply) || chipReply.Length < 1)
-                {
-                    Logger.Error($"{Ip}:{Port} --> chipReply is empty or null.");
-                    Logger.Warn($" {Ip}:{Port} --> Sending Error message....");
-                    return "ERROR: chipReply is empty or null.";
-                }
-
-                if (!chipReply.EndsWith("9000"))
-                {
-                    Logger.Error($"{Ip}:{Port} --> ChipReply Not Success(9000), can not extract UID.");
-                    Logger.Warn($" {Ip}:{Port} --> Sending Error message....");
-                    return "ERROR: ChipReply Not Success(9000), can not extract UID.";
-                }
-                Logger.Error($"{Ip}:{Port} --> ChipReply Success(9000), can extract UID");
-
-                Logger.Info($" {Ip}:{Port} --> extracting UID from ChipReply....");
-                var uid = chipReply.Substring(0, chipReply.Length - 4);
-
-                Logger.Info($" {Ip}:{Port} --> UID extracted successfully UID = '{uid}'.");
-
-                Logger.Info($" {Ip}:{Port} --> Validating the UID....");
-                if (uid.Length == 14 || uid.StartsWith("04"))
-                {
-                    Logger.Error($"{Ip}:{Port} --> UID is valid, can not proceed in Supplementary Printting.");
-                    Logger.Warn($" {Ip}:{Port} --> Sending Error message....");
-
-                    // eject passport
-                    return $"ERROR: Valid UID {uid}, can not proceed in Supplementary Printting.";
-                }
-
-                Logger.Info($" {Ip}:{Port} --> Invalid UID {uid}, Proceeding in Supplementary Printting.");
-
-                /////////////////////////////////////////////////////////
-
                 Logger.Info($" {Ip}:{Port} --> Sending OK response.");
                 return "Ok";
             }
@@ -353,6 +332,8 @@ namespace IXLA_SDK
                 await GracefulDisconnectClientAsync(client, Ip, Port);
             }
         }
+
+
 
         // need to retry disconnect and return spacific error 
         private async Task GracefulDisconnectClientAsync(MachineClient client, string Ip, int Port)
@@ -404,7 +385,7 @@ namespace IXLA_SDK
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Connecting to IXLA Printer {SerialNumber} at SupplementaryPrintting method.");
-                await client.ConnectWithRetryAsync(Ip, Port);
+                await client.ConnectWithRetryAsync(Ip, Port).ConfigureAwait(false); ;
                 var machineApi = new MachineApi(client);
 
                 // CheckAutopos ******
@@ -413,39 +394,94 @@ namespace IXLA_SDK
 
                 try
                 {
+
                     Logger.Info($" {Ip}:{Port} --> Performing CheckAutopos operations...");
-                    var autoPosResponseInitial = await machineApi.PerformAutoPosition("IraqAutopos");
+                    var autoPosResponseInitial = await machineApi.PerformAutoPosition("IraqAutopos").ConfigureAwait(false);
 
-                    Logger.Info($" {Ip}:{Port} --> CheckAutopos operation completed successfully in Ixla printer passport in Ingraving position.");
-
-                    //await machineApi.Connect2RfId();
-                    //var transmitResponse = await machineApi.Transmit2RfId(0xff, 0xca, 0x00, 0x00, 0x00);
-                    //var chipReply = BitConverter.ToString(transmitResponse.ChipReply);
-
+                    Logger.Info($" {Ip}:{Port} --> CheckAutopos operation completed successfully in Ixla printer, passport is in Ingraving position.");
 
                 }
                 catch (Exception)
                 {
-                    Logger.Warn($" {Ip}:{Port} --> CheckAutopos operation not completed  in Ixla printer no passport in Ingraving position.");
+                    Logger.Warn($" {Ip}:{Port} --> CheckAutopos operation not completed  in Ixla printer, no passport in Ingraving position.");
                     IsPassportInInGravingPosition = false;
                 }
 
                 // insert ************
 
+                if (IsPassportInInGravingPosition)
+                {
+                    Logger.Info($" {Ip}:{Port} --> Performing ResetIterfaceAsync operations to clean Samlight in printer {SerialNumber}...");
+                    await machineApi.ResetInterfaceASync().ConfigureAwait(false); ;
+                }
+
                 if (!IsPassportInInGravingPosition)
                 {
                     Logger.Info($" {Ip}:{Port} --> Performing ResetMachine operations in Ixla printer....");
-                    await machineApi.ResetAsync();
+                    await machineApi.ResetAsync().ConfigureAwait(false); ;
 
                     Logger.Info($" {Ip}:{Port} --> Reset machine operation completed successfully....");
 
 
                     Logger.Info($" {Ip}:{Port} --> Performing LoadPassport operations in Ixla printer....");
-                    await machineApi.LoadPassportAsync();
+                    await machineApi.LoadPassportAsync().ConfigureAwait(false); ;
 
                     Logger.Info($" {Ip}:{Port} --> ResetMachine operations completed successfully....");
                     Logger.Info($" {Ip}:{Port} --> Insert operation completed successfully in Ixla printer.");
                 }
+
+
+                // check UID *****
+
+                Logger.Info($" {Ip}:{Port} --> Performing Connect2RfId operations to check Chip Validity...");
+                await machineApi.Connect2RfId(); // add to try and catch for eject if there is no chip or coonection with the encoder 
+
+                Logger.Info($" {Ip}:{Port} --> Connect2RfId completed successfully.");
+
+                Logger.Info($" {Ip}:{Port} --> Sending Apdu to Chip to get UID....");
+                var transmitResponse = await machineApi.Transmit2RfId("FFCA000000"); ;
+
+                Logger.Info($" {Ip}:{Port} --> Response recived from Chip, ChipReply = '{transmitResponse.ChipReply}'");
+                var chipReply = transmitResponse.ChipReply;
+
+                Logger.Info($" {Ip}:{Port} --> Validating the chipReply....");
+                if (string.IsNullOrEmpty(chipReply) || chipReply.Length < 1)
+                {
+                    Logger.Error($"{Ip}:{Port} --> chipReply is empty or null.");
+                    Logger.Warn($" {Ip}:{Port} --> Sending Error message....");
+                    return "ERROR: chipReply is empty or null.";
+                }
+
+                if (!chipReply.EndsWith("9000"))
+                {
+                    Logger.Error($"{Ip}:{Port} --> ChipReply Not Success(9000), can not extract UID.");
+                    Logger.Warn($" {Ip}:{Port} --> Sending Error message....");
+                    return "ERROR: ChipReply Not Success(9000), can not extract UID.";
+                }
+                Logger.Info($"{Ip}:{Port} --> ChipReply Success(9000), can extract UID");
+
+                Logger.Info($" {Ip}:{Port} --> extracting UID from ChipReply....");
+                var uid = chipReply.Substring(0, chipReply.Length - 4);
+
+                Logger.Info($" {Ip}:{Port} --> UID extracted successfully UID = '{uid}'.");
+
+                Logger.Info($" {Ip}:{Port} --> Validating the UID....");
+
+                if (uid.Length == 14 || uid.StartsWith("04"))
+                {
+                    Logger.Error($"{Ip}:{Port} --> UID is valid, can not proceed in Supplementary Printting.");
+
+                    // eject passport
+                    Logger.Info($" {Ip}:{Port} --> Performing Eject operations...");
+                    await machineApi.EjectAsync().ConfigureAwait(false);
+
+                    Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
+
+                    Logger.Warn($" {Ip}:{Port} --> Sending Error message....");
+                    return $"ERROR: Valid UID {uid}, can not proceed in Supplementary Printting.";
+                }
+
+                Logger.Info($" {Ip}:{Port} --> Invalid UID {uid}, Proceeding in Supplementary Printting.");
 
 
                 //markLayout *********
@@ -492,7 +528,7 @@ namespace IXLA_SDK
                 Logger.Info($" {Ip}:{Port} --> Update layout and Mli to SamLight in Ixla Printer with SerialNumber: {SerialNumber} with provided Data completed successfully.");
 
                 Logger.Info($" {Ip}:{Port} --> Performing auto-position operation in Ixla Printer with SerialNumber: {SerialNumber}...");
-                var autoPosResponse = await machineApi.PerformAutoPosition("IraqAutopos");
+                var autoPosResponse = await machineApi.PerformAutoPosition("IraqAutopos").ConfigureAwait(false); ;
 
                 Logger.Info($" {Ip}:{Port} --> Auto-position operation in Ixla Printer with SerialNumber: {SerialNumber} completed successfully.");
                 Logger.Info($" {Ip}:{Port} --> Auto-position values : Xoffset=({autoPosResponse.XOffset}) , Yoffset=({autoPosResponse.YOffset}) , Correlation=({autoPosResponse.Correlation}%");

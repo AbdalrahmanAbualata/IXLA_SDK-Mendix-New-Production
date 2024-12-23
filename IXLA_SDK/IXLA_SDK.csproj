@@ -210,6 +210,8 @@
     <Compile Include="Protocol\Commands\Encoder\Connect2RfIdResponse.cs" />
     <Compile Include="Protocol\Commands\Encoder\Transmit2RfIdCommand.cs" />
     <Compile Include="Protocol\Commands\Encoder\Transmit2RfIdResponse.cs" />
+    <Compile Include="Protocol\Commands\Interface\ResetInterfaceResponse.cs" />
+    <Compile Include="Protocol\Commands\Interface\ResetInterfaceCommand.cs" />
     <Compile Include="Protocol\Commands\Interface\GetLayoutsCommand.cs" />
     <Compile Include="Protocol\Commands\Interface\GetLayoutsResponse.cs" />
     <Compile Include="Protocol\Commands\Interface\LoadDocumentCommand.cs" />

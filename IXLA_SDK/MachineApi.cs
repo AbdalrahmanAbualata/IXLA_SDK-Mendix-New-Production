@@ -34,6 +34,14 @@ namespace IXLA.Sdk.Xp24
         /// <returns>A ResetResponse object</returns>
         public async Task<ResetResponse> ResetAsync() => await _client.SendCommandAsync<ResetResponse>(new ResetCommand()).ConfigureAwait(false);
 
+
+        /// <summary>
+        /// Resets the machine and waits for the response
+        /// </summary>
+        /// <returns>A ResetResponse object</returns>
+        public async Task<ResetInterfaceResponse> ResetInterfaceASync() => await _client.SendCommandAsync<ResetInterfaceResponse>(new ResetInterfaceCommand()).ConfigureAwait(false);
+
+
         /// <summary>
         /// Moves a passport from the feeder to the laser position
         /// </summary>
