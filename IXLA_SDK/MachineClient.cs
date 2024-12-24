@@ -161,7 +161,7 @@ namespace IXLA.Sdk.Xp24
                 // if the server returns valid=false then we will not receive further messages 
                 if (!response.Valid) {
                     //await _writer.WriteLineAsync(payloadEject).ConfigureAwait(false);//new added for eject passport if error occur
-                    throw new Exception($"Invalid command. Error message: {response.Error}"); }
+                    throw new Exception($"Invalid command {command.Name}. Error message: {response.Error}"); }
                 if (!command.IsAsync) return response;
 
                 using var executionXmlReader = await WaitCompletion(timeout).ConfigureAwait(false);
@@ -170,7 +170,7 @@ namespace IXLA.Sdk.Xp24
                 response.Hydrate(executionXmlReader, false);
                 if (!response.Executed) {
                     //await _writer.WriteLineAsync(payloadEject).ConfigureAwait(false);//new added for eject passport if error occur
-                    throw new Exception($"Failed to execute command {command.Name}. Error message: {command.Name}"); }
+                    throw new Exception($"Failed to execute command {command.Name}. Error message: {response.Error}"); }
 
                 return response;
             }

@@ -36,9 +36,9 @@ namespace IXLA.Sdk.Xp24
 
 
         /// <summary>
-        /// Resets the machine and waits for the response
+        /// ResetInterface in machine and waits for the response
         /// </summary>
-        /// <returns>A ResetResponse object</returns>
+        /// <returns>A ResetInterfaceResponse object</returns>
         public async Task<ResetInterfaceResponse> ResetInterfaceASync() => await _client.SendCommandAsync<ResetInterfaceResponse>(new ResetInterfaceCommand()).ConfigureAwait(false);
 
 

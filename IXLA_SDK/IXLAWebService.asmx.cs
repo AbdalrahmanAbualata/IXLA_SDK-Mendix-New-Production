@@ -70,20 +70,20 @@ namespace IXLA_SDK
         private async Task<string> InsertAsync(string Ip, int Port, bool PerformAutoPosition)
         {
             using var client = new MachineClient();
-
+            var machineApi = new MachineApi(client);
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Connecting to IXLA Printer at Insert method.");
-                await client.ConnectWithRetryAsync(Ip, Port);
-                var machineApi = new MachineApi(client);
+                await client.ConnectWithRetryAsync(Ip, Port).ConfigureAwait(false);
+
 
                 Logger.Info($" {Ip}:{Port} --> Performing ResetMachine operations in Ixla printer....");
-                await machineApi.ResetAsync();
+                await machineApi.ResetAsync().ConfigureAwait(false);
 
                 Logger.Info($" {Ip}:{Port} --> Reset machine operation completed successfully....");
 
                 Logger.Info($" {Ip}:{Port} --> Performing LoadPassport operations in Ixla printer....");
-                await machineApi.LoadPassportAsync();
+                await machineApi.LoadPassportAsync().ConfigureAwait(false);
 
                 Logger.Info($" {Ip}:{Port} --> Insert operation completed successfully in Ixla printer.");
 
@@ -92,7 +92,7 @@ namespace IXLA_SDK
                 if (PerformAutoPosition)
                 {
                     Logger.Info($" {Ip}:{Port} --> Performing CheckAutopos operations...");
-                    var autoPosResponseInitial = await machineApi.PerformAutoPosition("IraqAutopos");
+                    var autoPosResponseInitial = await machineApi.PerformAutoPosition("IraqAutopos").ConfigureAwait(false);
 
                     Logger.Info($" {Ip}:{Port} --> CheckAutopos operation completed successfully in Ixla printer, passport is in Ingraving position.");
                 }
@@ -104,7 +104,14 @@ namespace IXLA_SDK
             }
             catch (Exception e)
             {
-                Logger.Error($"{Ip}:{Port} --> Error occurred in InsertAsync method.");
+                try
+                {
+                    Logger.Error($" {Ip}:{Port} --> Issue in Inserting or CheckAutopos Performing Eject operations...");
+                    await machineApi.EjectAsync().ConfigureAwait(false);
+                    Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
+                } catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
+
+
                 Logger.Error($"{Ip}:{Port} --> {e}");
                 return $"{Ip}:{Port} --> {e}";
             }
@@ -143,12 +150,11 @@ namespace IXLA_SDK
         private async Task<string> MarkLayoutAsync(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo, bool PerformEject)
         {
             using var client = new MachineClient();
-
+            var machineApi = new MachineApi(client);
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Connecting to IXLA Printer {SerialNumber} at MarkLayout method.");
-                await client.ConnectWithRetryAsync(Ip, Port);
-                var machineApi = new MachineApi(client);
+                await client.ConnectWithRetryAsync(Ip, Port).ConfigureAwait(false);
 
                 Logger.Info($" {Ip}:{Port} --> Loading document {SerialNumber}Layout.sjf to SamLight for Ixla Printer with SerialNumber: {SerialNumber}");
                 await machineApi.LoadDocumentAsync("layout", System.IO.File.ReadAllBytes($"\\Users\\Administrator\\Desktop\\IraqLayoutNew\\all Printer\\{SerialNumber}\\{SerialNumber}Layout.sjf")).ConfigureAwait(false);
@@ -192,7 +198,7 @@ namespace IXLA_SDK
                 Logger.Info($" {Ip}:{Port} --> Update layout and Mli to SamLight in Ixla Printer with SerialNumber: {SerialNumber} with provided Data completed successfully.");
 
                 Logger.Info($" {Ip}:{Port} --> Performing auto-position operation in Ixla Printer with SerialNumber: {SerialNumber}...");
-                var autoPosResponse = await machineApi.PerformAutoPosition("IraqAutopos");
+                var autoPosResponse = await machineApi.PerformAutoPosition("IraqAutopos").ConfigureAwait(false);
 
                 Logger.Info($" {Ip}:{Port} --> Auto-position operation in Ixla Printer with SerialNumber: {SerialNumber} completed successfully.");
                 Logger.Info($" {Ip}:{Port} --> Auto-position values : Xoffset=({autoPosResponse.XOffset}) , Yoffset=({autoPosResponse.YOffset}) , Correlation=({autoPosResponse.Correlation}%");
@@ -224,6 +230,14 @@ namespace IXLA_SDK
             }
             catch (Exception e)
             {
+                try
+                {
+                    Logger.Error($" {Ip}:{Port} --> Issue in MarkLayoutAsync Performing Eject operations...");
+                    await machineApi.EjectAsync().ConfigureAwait(false);
+                    Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
+                } catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
+
+
                 Logger.Error($"{Ip}:{Port} --> Error occurred in MarkLayoutAsync method while marking Booklet in Ixla Printer with SerialNumber: {SerialNumber} .");
                 Logger.Error($"{Ip}:{Port} --> {e}");
                 return $"{Ip}:{Port} --> {e}";
@@ -257,12 +271,11 @@ namespace IXLA_SDK
         private async Task<string> EjectAsync(string Ip, int Port)
         {
             using var client = new MachineClient();
-
+            var machineApi = new MachineApi(client);
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Connecting to machine at EjectAsync method.");
-                await client.ConnectWithRetryAsync(Ip, Port);
-                var machineApi = new MachineApi(client);
+                await client.ConnectWithRetryAsync(Ip, Port).ConfigureAwait(false);
 
                 Logger.Info($" {Ip}:{Port} --> Performing Eject operations...");
                 await machineApi.EjectAsync().ConfigureAwait(false);
@@ -305,15 +318,16 @@ namespace IXLA_SDK
         private async Task<string> CheckAutoposAsync(string Ip, int Port)
         {
             using var client = new MachineClient();
+            var machineApi = new MachineApi(client);
 
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Connecting to machine at CheckAutoposAsync method....");
-                await client.ConnectWithRetryAsync(Ip, Port);
-                var machineApi = new MachineApi(client);
+                await client.ConnectWithRetryAsync(Ip, Port).ConfigureAwait(false);
+
 
                 Logger.Info($" {Ip}:{Port} --> Performing CheckAutopos operations....");
-                var autoPosResponse = await machineApi.PerformAutoPosition("IraqAutopos");
+                var autoPosResponse = await machineApi.PerformAutoPosition("IraqAutopos").ConfigureAwait(false);
 
                 Logger.Info($" {Ip}:{Port} --> CheckAutopos operation completed successfully in Ixla printer.");
                 Logger.Info($" {Ip}:{Port} --> Auto-position values : Xoffset=({autoPosResponse.XOffset}) , Yoffset=({autoPosResponse.YOffset}) , Correlation=({autoPosResponse.Correlation}%");
@@ -323,7 +337,13 @@ namespace IXLA_SDK
             }
             catch (Exception e)
             {
-                Logger.Error($"{Ip}:{Port} --> Error occurred in CheckAutoposAsync method.");
+                try
+                {
+                    Logger.Error($" {Ip}:{Port} --> Issue in CheckAutoposAsync Performing Eject operations...");
+                    await machineApi.EjectAsync().ConfigureAwait(false);
+                    Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
+                } catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
+
                 Logger.Error($"{Ip}:{Port} --> {e}");
                 return $"{Ip}:{Port} --> {e}";
             }
@@ -381,12 +401,11 @@ namespace IXLA_SDK
         private async Task<string> SupplementaryPrinttingAsync(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo, string CaseID)
         {
             using var client = new MachineClient();
-
+            var machineApi = new MachineApi(client);
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Connecting to IXLA Printer {SerialNumber} at SupplementaryPrintting method.");
                 await client.ConnectWithRetryAsync(Ip, Port).ConfigureAwait(false); ;
-                var machineApi = new MachineApi(client);
 
                 // CheckAutopos ******
 
@@ -434,12 +453,12 @@ namespace IXLA_SDK
                 // check UID *****
 
                 Logger.Info($" {Ip}:{Port} --> Performing Connect2RfId operations to check Chip Validity...");
-                await machineApi.Connect2RfId(); // add to try and catch for eject if there is no chip or coonection with the encoder 
+                await machineApi.Connect2RfId().ConfigureAwait(false); // add to try and catch for eject if there is no chip or coonection with the encoder 
 
                 Logger.Info($" {Ip}:{Port} --> Connect2RfId completed successfully.");
 
                 Logger.Info($" {Ip}:{Port} --> Sending Apdu to Chip to get UID....");
-                var transmitResponse = await machineApi.Transmit2RfId("FFCA000000"); ;
+                var transmitResponse = await machineApi.Transmit2RfId("FFCA000000").ConfigureAwait(false); ;
 
                 Logger.Info($" {Ip}:{Port} --> Response recived from Chip, ChipReply = '{transmitResponse.ChipReply}'");
                 var chipReply = transmitResponse.ChipReply;
@@ -557,6 +576,13 @@ namespace IXLA_SDK
             }
             catch (Exception e)
             {
+                try
+                {
+                    Logger.Error($" {Ip}:{Port} --> Issue in SupplementaryPrinttingAsync Performing Eject operations...");
+                    await machineApi.EjectAsync().ConfigureAwait(false);
+                    Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
+                } catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
+
                 Logger.Error($"{Ip}:{Port} --> Error occurred in SupplementaryPrinttingAsync method while marking Booklet in Ixla Printer with SerialNumber: {SerialNumber} .");
                 Logger.Error($"{Ip}:{Port} --> {e}");
                 return $"{Ip}:{Port} --> {e}";
