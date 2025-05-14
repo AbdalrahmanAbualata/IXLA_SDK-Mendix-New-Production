@@ -473,11 +473,11 @@ namespace IXLA_SDK
 
                 if (!chipReply.EndsWith("9000"))
                 {
-                    Logger.Error($"{Ip}:{Port} --> ChipReply Not Success(9000), can not extract UID.");
+                    Logger.Error($" {Ip}:{Port} --> ChipReply Not Success(9000), can not extract UID.");
                     Logger.Warn($" {Ip}:{Port} --> Sending Error message....");
                     return "ERROR: ChipReply Not Success(9000), can not extract UID.";
                 }
-                Logger.Info($"{Ip}:{Port} --> ChipReply Success(9000), can extract UID");
+                Logger.Info($" {Ip}:{Port} --> ChipReply Success(9000), can extract UID");
 
                 Logger.Info($" {Ip}:{Port} --> extracting UID from ChipReply....");
                 var uid = chipReply.Substring(0, chipReply.Length - 4);
