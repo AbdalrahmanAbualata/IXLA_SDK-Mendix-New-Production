@@ -18,9 +18,10 @@ using NLog;
 using System.Web.Services.Description;
 using System.Net.Http;
 using NLog.LayoutRenderers;
-
-
-
+using System.IO;
+using Newtonsoft.Json;
+using System.Xml;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace IXLA_SDK
 {
@@ -49,10 +50,24 @@ namespace IXLA_SDK
         //    // the encoder (connect2rfid and transmit2rfid)
 
         [WebMethod]
-        public string Insert(string Ip, int Port, bool PerformAutoPosition = false)
+        public string Insert(string Ip, int Port, string userId, bool PerformAutoPosition = false)
         {
 
             Logger.Info("***********************************************************************************************************************************************************************************");
+
+            // auth proccess
+            if (!IsUserAuthorized(Ip, userId))
+            {
+                Logger.Warn($" {Ip}:{Port} --> Unauthorized access attempt by {userId} on printer {Ip}");
+                return "Unauthorized user";
+            }
+            else
+            {
+                Logger.Info($" {Ip}:{Port} --> authorized access attempt by {userId} on printer {Ip}");
+            }
+
+            /// auth end
+
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Insert method called.");
@@ -109,7 +124,8 @@ namespace IXLA_SDK
                     Logger.Error($" {Ip}:{Port} --> Issue in Inserting or CheckAutopos Performing Eject operations...");
                     await machineApi.EjectAsync().ConfigureAwait(false);
                     Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
-                } catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
+                }
+                catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
 
 
                 Logger.Error($"{Ip}:{Port} --> {e}");
@@ -235,7 +251,8 @@ namespace IXLA_SDK
                     Logger.Error($" {Ip}:{Port} --> Issue in MarkLayoutAsync Performing Eject operations...");
                     await machineApi.EjectAsync().ConfigureAwait(false);
                     Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
-                } catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
+                }
+                catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
 
 
                 Logger.Error($"{Ip}:{Port} --> Error occurred in MarkLayoutAsync method while marking Booklet in Ixla Printer with SerialNumber: {SerialNumber} .");
@@ -342,7 +359,8 @@ namespace IXLA_SDK
                     Logger.Error($" {Ip}:{Port} --> Issue in CheckAutoposAsync Performing Eject operations...");
                     await machineApi.EjectAsync().ConfigureAwait(false);
                     Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
-                } catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
+                }
+                catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
 
                 Logger.Error($"{Ip}:{Port} --> {e}");
                 return $"{Ip}:{Port} --> {e}";
@@ -581,7 +599,8 @@ namespace IXLA_SDK
                     Logger.Error($" {Ip}:{Port} --> Issue in SupplementaryPrinttingAsync Performing Eject operations...");
                     await machineApi.EjectAsync().ConfigureAwait(false);
                     Logger.Info($" {Ip}:{Port} --> Eject operation completed successfully in Ixla printer.");
-                } catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
+                }
+                catch (Exception) { Logger.Error($"{Ip}:{Port} --> Error occurred in EjectAsync method."); }
 
                 Logger.Error($"{Ip}:{Port} --> Error occurred in SupplementaryPrinttingAsync method while marking Booklet in Ixla Printer with SerialNumber: {SerialNumber} .");
                 Logger.Error($"{Ip}:{Port} --> {e}");
@@ -592,6 +611,50 @@ namespace IXLA_SDK
                 await GracefulDisconnectClientAsync(client, Ip, Port);
             }
         }
+
+
+
+        // Auth functions ///
+
+        [WebMethod]
+        public string GetAllowedUsers(string printerId)
+        {
+            string filePath = Server.MapPath("~/allowed_users.json");
+            if (!File.Exists(filePath)) return "{}";
+
+            var json = File.ReadAllText(filePath);
+            var usersDict = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
+            return usersDict.ContainsKey(printerId)
+                ? JsonConvert.SerializeObject(usersDict[printerId])
+                : "[]";
+        }
+
+
+        [WebMethod]
+        public string SaveAllowedUsers(string printerId, string usersJson)
+        {
+            string filePath = Server.MapPath("~/allowed_users.json");
+            var usersDict = File.Exists(filePath)
+                ? JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(File.ReadAllText(filePath))
+                : new Dictionary<string, List<string>>();
+
+            usersDict[printerId] = JsonConvert.DeserializeObject<List<string>>(usersJson);
+            File.WriteAllText(filePath, JsonConvert.SerializeObject(usersDict, Formatting.Indented));
+            return "OK";
+        }
+
+
+        bool IsUserAuthorized(string printerId, string userId)
+        {
+            string filePath = HttpContext.Current.Server.MapPath("~/allowed_users.json");
+            if (!File.Exists(filePath)) return false;
+
+            var json = File.ReadAllText(filePath);
+            var usersDict = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
+            return usersDict.ContainsKey(printerId) && usersDict[printerId].Contains(userId);
+        }
+        //////////////////////////////
+
     }
 }
 
