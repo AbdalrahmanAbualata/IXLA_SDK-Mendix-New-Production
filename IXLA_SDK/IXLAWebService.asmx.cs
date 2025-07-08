@@ -142,9 +142,25 @@ namespace IXLA_SDK
         //  MarkLayout method
 
         [WebMethod]
-        public string MarkLayout(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo, bool PerformEject = false)
+        public string MarkLayout(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo,string userId , bool PerformEject = false)
         {
             Logger.Info("***********************************************************************************************************************************************************************************");
+
+            // auth proccess
+            if (!IsUserAuthorized(Ip, userId))
+            {
+                Logger.Warn($" {Ip}:{Port} --> Unauthorized access attempt by {userId} on printer {Ip}");
+                return "Unauthorized user";
+            }
+            else
+            {
+                Logger.Info($" {Ip}:{Port} --> authorized access attempt by {userId} on printer {Ip}");
+            }
+
+            /// auth end
+            /// 
+
+
             if (Ip == string.Empty || SerialNumber == string.Empty)
             {
                 Logger.Error($"{Ip}:{Port} --> Error occurred in MarkLayout method");
@@ -269,9 +285,23 @@ namespace IXLA_SDK
         //  Eject method
 
         [WebMethod]
-        public string Eject(string Ip, int Port)
+        public string Eject(string Ip, int Port , string userId)
         {
             Logger.Info("***********************************************************************************************************************************************************************************");
+
+            // auth proccess
+            if (!IsUserAuthorized(Ip, userId))
+            {
+                Logger.Warn($" {Ip}:{Port} --> Unauthorized access attempt by {userId} on printer {Ip}");
+                return "Unauthorized user";
+            }
+            else
+            {
+                Logger.Info($" {Ip}:{Port} --> authorized access attempt by {userId} on printer {Ip}");
+            }
+
+            /// auth end
+
             try
             {
                 Logger.Info($" {Ip}:{Port} --> Eject method called.");
@@ -316,9 +346,23 @@ namespace IXLA_SDK
 
 
         [WebMethod]
-        public string CheckAutopos(string Ip, int Port)
+        public string CheckAutopos(string Ip, int Port, string userId)
         {
             Logger.Info("***********************************************************************************************************************************************************************************");
+           
+            // auth proccess
+            if (!IsUserAuthorized(Ip, userId))
+            {
+                Logger.Warn($" {Ip}:{Port} --> Unauthorized access attempt by {userId} on printer {Ip}");
+                return "Unauthorized user";
+            }
+            else
+            {
+                Logger.Info($" {Ip}:{Port} --> authorized access attempt by {userId} on printer {Ip}");
+            }
+
+            /// auth end
+
             try
             {
                 Logger.Info($" {Ip}:{Port} --> CheckAutopos method called.");
@@ -393,10 +437,25 @@ namespace IXLA_SDK
         //*******************************************************************************************************************************************************************************************************
 
         [WebMethod]
-        public string SupplementaryPrintting(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo, string CaseID = "1234")
+        public string SupplementaryPrintting(string Ip, int Port, string SerialNumber, string Type, string Country, string Passport, string Name1EN, string DateOfBirth, string Name2AR, string Surname1EN, string Surname1AR, string MatherNameEN, string MatherNameAR, string Sex, string PlaceOfBirth, string PlaceOfBirthArabic, string Nationality, string dateOfIssue, string DateOfExpiry, string Signature, string AuthorityPlaceEN, string MRZ1, string MRZ2, string Photo, string userId, string CaseID = "1234")
         {
 
             Logger.Info("***********************************************************************************************************************************************************************************");
+           
+            // auth proccess
+            if (!IsUserAuthorized(Ip, userId))
+            {
+                Logger.Warn($" {Ip}:{Port} --> Unauthorized access attempt by {userId} on printer {Ip}");
+                return "Unauthorized user";
+            }
+            else
+            {
+                Logger.Info($" {Ip}:{Port} --> authorized access attempt by {userId} on printer {Ip}");
+            }
+
+            /// auth end
+
+
             if (Ip == string.Empty || SerialNumber == string.Empty)
             {
                 Logger.Error($"{Ip}:{Port} --> Error occurred in SupplementaryPrintting method");
@@ -614,34 +673,79 @@ namespace IXLA_SDK
 
 
 
+
+
+
+
         // Auth functions ///
 
         [WebMethod]
-        public string GetAllowedUsers(string printerId)
+        public string GetAllowedUsers()
         {
             string filePath = Server.MapPath("~/allowed_users.json");
             if (!File.Exists(filePath)) return "{}";
 
-            var json = File.ReadAllText(filePath);
-            var usersDict = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
-            return usersDict.ContainsKey(printerId)
-                ? JsonConvert.SerializeObject(usersDict[printerId])
-                : "[]";
+            return File.ReadAllText(filePath); // Return full JSON structure
         }
-
 
         [WebMethod]
         public string SaveAllowedUsers(string printerId, string usersJson)
         {
             string filePath = Server.MapPath("~/allowed_users.json");
-            var usersDict = File.Exists(filePath)
-                ? JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(File.ReadAllText(filePath))
-                : new Dictionary<string, List<string>>();
 
-            usersDict[printerId] = JsonConvert.DeserializeObject<List<string>>(usersJson);
-            File.WriteAllText(filePath, JsonConvert.SerializeObject(usersDict, Formatting.Indented));
+            Dictionary<string, List<string>> usersDict;
+
+            // SAFELY READ FILE even if locked by another process
+            if (File.Exists(filePath))
+            {
+                try
+                {
+                    using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    using (var reader = new StreamReader(fs))
+                    {
+                        string json = reader.ReadToEnd();
+                        usersDict = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json)
+                                     ?? new Dictionary<string, List<string>>();
+                    }
+                }
+                catch
+                {
+                    // fallback if the file is completely locked
+                    usersDict = new Dictionary<string, List<string>>();
+                }
+            }
+            else
+            {
+                usersDict = new Dictionary<string, List<string>>();
+            }
+
+            // Parse the new user list
+            var userList = JsonConvert.DeserializeObject<List<string>>(usersJson);
+
+            if (userList == null || userList.Count == 0)
+            {
+                usersDict.Remove(printerId);
+            }
+            else
+            {
+                usersDict[printerId] = userList;
+            }
+
+            // SAFELY WRITE FILE, overwrite mode, allow others to read
+            string updatedJson = JsonConvert.SerializeObject(usersDict, Formatting.Indented);
+            using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+            using (var writer = new StreamWriter(fs))
+            {
+                writer.Write(updatedJson);
+            }
+
             return "OK";
         }
+
+
+
+
+        // Auth functions ///
 
 
         bool IsUserAuthorized(string printerId, string userId)
